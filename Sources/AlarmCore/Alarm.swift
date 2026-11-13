@@ -13,7 +13,7 @@ public struct RGBA: Codable, Equatable, Hashable, Sendable {
         self.a = a
     }
 
-    public static let defaultBlur = RGBA(r: 0, g: 0, b: 0, a: 0.4)
+    public static let defaultTint = RGBA(r: 0, g: 0, b: 0, a: 0.4)
 }
 
 public struct Alarm: Codable, Equatable, Identifiable, Sendable {
@@ -58,7 +58,7 @@ public struct Alarm: Codable, Equatable, Identifiable, Sendable {
             label: defaultLabel,
             weekdays: [],
             isEnabled: true,
-            color: .defaultBlur
+            color: .defaultTint
         )
     }
 }

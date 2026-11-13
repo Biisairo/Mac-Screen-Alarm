@@ -4,7 +4,7 @@ extension RGBA {
     /// FR-8: 오버레이·미리보기가 유리처럼 보이는 농도 범위.
     public static let glassAlphaRange: ClosedRange<Double> = 0.10...0.75
 
-    /// FR-21: 이보다 휘도가 높은 색은 밝은 블러와 어두운 글자를 쓴다.
+    /// FR-21: 이보다 휘도가 높은 색 위에는 어두운 글자를 쓴다.
     public static let lightLuminanceThreshold = 0.55
 
     /// FR-8: 농도를 유리 농도 범위로 자른 색.

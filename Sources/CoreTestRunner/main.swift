@@ -24,7 +24,7 @@ calendar.timeZone = TimeZone(identifier: "Asia/Seoul")!
 @MainActor func at(_ hour: Int, _ minute: Int, _ second: Int = 0) -> Date { on(13, hour, minute, second) }
 
 @MainActor func alarm(_ hour: Int, _ minute: Int, weekdays: Set<Int> = [], enabled: Bool = true, label: String = "a") -> Alarm {
-    Alarm(hour: hour, minute: minute, label: label, weekdays: weekdays, isEnabled: enabled, color: .defaultBlur)
+    Alarm(hour: hour, minute: minute, label: label, weekdays: weekdays, isEnabled: enabled, color: .defaultTint)
 }
 
 @MainActor func due(_ alarms: [Alarm], _ from: Date, _ to: Date) -> [Alarm] {

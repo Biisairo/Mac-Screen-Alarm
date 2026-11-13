@@ -14,7 +14,7 @@ final class OverlayController: NSObject {
         let primary = NSScreen.screens.first
         for screen in NSScreen.screens {
             let panel = OverlayPanel(screen: screen)
-            panel.contentView = makeContent(alarm: alarm, showsCard: screen == primary)
+            panel.contentView = makeContent(alarm: alarm, showsMessage: screen == primary)
             panel.orderFrontRegardless()
             panels.append(panel)
         }
@@ -32,13 +32,13 @@ final class OverlayController: NSObject {
     }
 
     /// FR-21: 블러 없이 색만 덮는다. 아래 화면이 그대로 비쳐 보인다.
-    private func makeContent(alarm: Alarm, showsCard: Bool) -> NSView {
+    private func makeContent(alarm: Alarm, showsMessage: Bool) -> NSView {
         let tint = alarm.color.glassTint
         let cover = NSView()
         cover.wantsLayer = true
         cover.layer?.backgroundColor = NSColor(tint).cgColor
 
-        if showsCard {
+        if showsMessage {
             let message = makeMessage(alarm: alarm, ink: GlassInk(tint))
             cover.addSubview(message)
             NSLayoutConstraint.activate([
@@ -81,17 +81,6 @@ final class OverlayController: NSObject {
         stack.wantsLayer = true
         stack.shadow = shadow
         return stack
-    }
-
-    private func pin(_ child: NSView, to parent: NSView) {
-        child.translatesAutoresizingMaskIntoConstraints = false
-        parent.addSubview(child)
-        NSLayoutConstraint.activate([
-            child.leadingAnchor.constraint(equalTo: parent.leadingAnchor),
-            child.trailingAnchor.constraint(equalTo: parent.trailingAnchor),
-            child.topAnchor.constraint(equalTo: parent.topAnchor),
-            child.bottomAnchor.constraint(equalTo: parent.bottomAnchor),
-        ])
     }
 }
 
