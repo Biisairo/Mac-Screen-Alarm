@@ -2,7 +2,7 @@ import AlarmCore
 import AppKit
 import SwiftUI
 
-/// FR-20~FR-24: 모든 화면을 덮는 블러 오버레이.
+/// FR-20~FR-24: 모든 화면을 덮는 반투명 색 오버레이.
 @MainActor
 final class OverlayController: NSObject {
     var onDismiss: () -> Void = {}
@@ -14,7 +14,7 @@ final class OverlayController: NSObject {
         let primary = NSScreen.screens.first
         for screen in NSScreen.screens {
             let panel = OverlayPanel(screen: screen)
-            panel.contentView = makeContent(alarm: alarm, screen: screen, showsCard: screen == primary)
+            panel.contentView = makeContent(alarm: alarm, showsCard: screen == primary)
             panel.orderFrontRegardless()
             panels.append(panel)
         }
@@ -31,49 +31,26 @@ final class OverlayController: NSObject {
         onDismiss()
     }
 
-    private func makeContent(alarm: Alarm, screen: NSScreen, showsCard: Bool) -> NSView {
+    /// FR-21: 블러 없이 색만 덮는다. 아래 화면이 그대로 비쳐 보인다.
+    private func makeContent(alarm: Alarm, showsCard: Bool) -> NSView {
         let tint = alarm.color.glassTint
-        let blur = makeBackdrop(screen: screen, isLight: tint.isLight)
-
-        let tintView = NSView()
-        tintView.wantsLayer = true
-        tintView.layer?.backgroundColor = NSColor(tint).cgColor
-        pin(tintView, to: blur)
+        let cover = NSView()
+        cover.wantsLayer = true
+        cover.layer?.backgroundColor = NSColor(tint).cgColor
 
         if showsCard {
             let message = makeMessage(alarm: alarm, ink: GlassInk(tint))
-            blur.addSubview(message)
+            cover.addSubview(message)
             NSLayoutConstraint.activate([
-                message.centerXAnchor.constraint(equalTo: blur.centerXAnchor),
-                message.centerYAnchor.constraint(equalTo: blur.centerYAnchor),
-                message.widthAnchor.constraint(lessThanOrEqualTo: blur.widthAnchor, multiplier: 0.7),
+                message.centerXAnchor.constraint(equalTo: cover.centerXAnchor),
+                message.centerYAnchor.constraint(equalTo: cover.centerYAnchor),
+                message.widthAnchor.constraint(lessThanOrEqualTo: cover.widthAnchor, multiplier: 0.7),
             ])
         }
-        return blur
+        return cover
     }
 
-    /// FR-21: 시스템 블러를 쓸 수 없으면("투명도 줄이기") 바탕화면 이미지를 직접 블러한다.
-    private func makeBackdrop(screen: NSScreen, isLight: Bool) -> NSView {
-        if NSWorkspace.shared.accessibilityDisplayShouldReduceTransparency, let image = Wallpaper.blurred(for: screen) {
-            let backdrop = NSView()
-            backdrop.wantsLayer = true
-            backdrop.layer?.contents = image
-            backdrop.layer?.contentsGravity = .resizeAspectFill
-            let wash = NSView()
-            wash.wantsLayer = true
-            wash.layer?.backgroundColor = NSColor(white: isLight ? 1 : 0, alpha: GlassSurface.washOpacity).cgColor
-            pin(wash, to: backdrop)
-            return backdrop
-        }
-        let blur = NSVisualEffectView()
-        blur.material = .fullScreenUI
-        blur.blendingMode = .behindWindow
-        blur.state = .active
-        blur.appearance = NSAppearance(named: isLight ? .aqua : .darkAqua)
-        return blur
-    }
-
-    /// FR-22: 카드 없이 유리 위에 날짜·시각·내용·끄기 버튼을 놓는다.
+    /// FR-22: 카드 없이 색 덮개 위에 날짜·시각·내용·끄기 버튼을 놓는다.
     private func makeMessage(alarm: Alarm, ink: GlassInk) -> NSView {
         let date = NSTextField(labelWithString: OverlayText.date(Date()))
         date.font = .systemFont(ofSize: 17)
@@ -97,6 +74,12 @@ final class OverlayController: NSObject {
         stack.setCustomSpacing(0, after: date)
         stack.setCustomSpacing(48, after: label)
         stack.translatesAutoresizingMaskIntoConstraints = false
+        let shadow = NSShadow()
+        shadow.shadowColor = NSColor(ink.shadow)
+        shadow.shadowBlurRadius = GlassInk.shadowRadius
+        shadow.shadowOffset = .zero
+        stack.wantsLayer = true
+        stack.shadow = shadow
         return stack
     }
 

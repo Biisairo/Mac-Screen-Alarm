@@ -58,7 +58,7 @@ struct AlarmEditor: View {
                 Button("취소") { dismiss() }
                     .keyboardShortcut(.cancelAction)
                 Button("저장") {
-                    session.draft.isEnabled = isNew || session.draft.isEnabled
+                    session.draft.isEnabled = true
                     session.draft.color = session.draft.color.glassTint
                     onSave(session.draft)
                     dismiss()

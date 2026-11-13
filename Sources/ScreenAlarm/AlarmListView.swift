@@ -141,7 +141,7 @@ private struct EmptyAlarms: View {
             VStack(spacing: 4) {
                 Text("알람이 없습니다")
                     .font(.system(size: 15, weight: .medium))
-                Text("알람이 울리면 소리 대신 화면 전체가\n고른 색의 유리로 덮입니다")
+                Text("알람이 울리면 소리 대신 화면 전체가\n고른 색으로 반투명하게 덮입니다")
                     .font(.system(size: 13))
                     .foregroundStyle(.secondary)
                     .multilineTextAlignment(.center)

@@ -1,15 +1,12 @@
 import AlarmCore
 import AppKit
-import CoreImage
 import SwiftUI
 
-/// FR-39: 화면 기록 권한 없이 바탕화면 파일을 읽어 유리 표현의 배경으로 쓴다.
+/// FR-39: 화면 기록 권한 없이 바탕화면 파일을 읽어 미리보기·타일의 배경으로 쓴다.
 @MainActor
 enum Wallpaper {
     private static let maxPixelWidth: CGFloat = 960
     private static let fallbackAspectRatio: CGFloat = 16 / 10
-    /// `maxPixelWidth` 기준. 화면 크기로 늘리면 오버레이의 시스템 블러와 비슷한 세기가 된다.
-    private static let overlayBlurRadius = 24.0
     private static var cachedURL: URL?
     private static var cachedImage: NSImage?
 
@@ -27,22 +24,7 @@ enum Wallpaper {
         return frame.width / frame.height
     }
 
-    /// FR-21: "투명도 줄이기"가 켜져 시스템 블러를 쓸 수 없을 때 오버레이 배경으로 쓴다.
-    static func blurred(for screen: NSScreen) -> CGImage? {
-        guard let url = NSWorkspace.shared.desktopImageURL(for: screen),
-              let image = downscaled(NSImage(contentsOf: url)),
-              let source = image.cgImage(forProposedRect: nil, context: nil, hints: nil)
-        else { return nil }
-        let input = CIImage(cgImage: source)
-        let filter = CIFilter(name: "CIGaussianBlur", parameters: [
-            kCIInputImageKey: input.clampedToExtent(),
-            kCIInputRadiusKey: overlayBlurRadius,
-        ])
-        guard let output = filter?.outputImage?.cropped(to: input.extent) else { return nil }
-        return CIContext().createCGImage(output, from: input.extent)
-    }
-
-    /// 블러 비용을 줄이려고 작은 비트맵으로 한 번만 그린다.
+    /// 그리기 비용을 줄이려고 작은 비트맵으로 한 번만 그린다.
     private static func downscaled(_ source: NSImage?) -> NSImage? {
         guard let source, source.size.width > 0 else { return nil }
         let scale = min(1, maxPixelWidth / source.size.width)
@@ -62,16 +44,20 @@ enum Wallpaper {
     }
 }
 
-/// FR-21: 유리 위 글자색. 밝은 색 유리에는 어두운 글자를 쓴다.
+/// FR-21: 색 덮개 위 글자색. 밝은 색에는 어두운 글자를 쓰고, 아래 화면 위에서 읽히도록 반대색 그림자를 둔다.
 struct GlassInk {
     let primary: Color
     let secondary: Color
     let fill: Color
     let hoverFill: Color
     let border: Color
+    let shadow: Color
+
+    static let shadowRadius: CGFloat = 8
 
     init(_ color: RGBA) {
         let base: Color = color.isLight ? .black : .white
+        shadow = (color.isLight ? Color.white : Color.black).opacity(0.5)
         primary = base.opacity(color.isLight ? 0.85 : 0.95)
         secondary = base.opacity(0.6)
         fill = base.opacity(0.14)
@@ -80,14 +66,10 @@ struct GlassInk {
     }
 }
 
-/// 블러한 바탕화면 + 유리 농도로 자른 알람 색. 오버레이의 모습을 앱 안에서 재현한다.
+/// 바탕화면 + 유리 농도로 자른 알람 색. 오버레이(FR-21)의 모습을 앱 안에서 재현한다.
 struct GlassSurface: View {
-    /// 오버레이의 fullScreenUI 블러가 더하는 밝기·어둡기 층의 불투명도.
-    static let washOpacity = 0.18
-
     let color: RGBA
     let wallpaper: NSImage?
-    let blurRadius: CGFloat
 
     var body: some View {
         ZStack {
@@ -95,11 +77,9 @@ struct GlassSurface: View {
                 Image(nsImage: wallpaper)
                     .resizable()
                     .scaledToFill()
-                    .blur(radius: blurRadius, opaque: true)
             } else {
                 Color(white: 0.5)
             }
-            Color(white: color.isLight ? 1 : 0, opacity: Self.washOpacity)
             Color(color.glassTint)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -113,7 +93,7 @@ struct GlassTile: View {
     var size: CGFloat = 40
 
     var body: some View {
-        GlassSurface(color: color, wallpaper: Wallpaper.current(), blurRadius: 3)
+        GlassSurface(color: color, wallpaper: Wallpaper.current())
             .frame(width: size, height: size)
             .clipShape(RoundedRectangle(cornerRadius: size / 4, style: .continuous))
             .overlay(
@@ -130,7 +110,7 @@ struct OverlayPreview: View {
 
     var body: some View {
         let ink = GlassInk(alarm.color)
-        GlassSurface(color: alarm.color, wallpaper: Wallpaper.current(), blurRadius: 14)
+        GlassSurface(color: alarm.color, wallpaper: Wallpaper.current())
             .overlay {
                 VStack(spacing: 4) {
                     if let date {
@@ -154,6 +134,7 @@ struct OverlayPreview: View {
                         .padding(.top, 8)
                 }
                 .padding(.horizontal, 24)
+                .shadow(color: ink.shadow, radius: 2)
             }
             .aspectRatio(Wallpaper.aspectRatio, contentMode: .fit)
             .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
