@@ -140,6 +140,43 @@ check(queue.current == nil, "FR-14 모두 해제하면 비어 있음")
 queue.dismiss()
 check(queue.current == nil, "FR-14 빈 큐 해제는 무해")
 
+// MARK: - FR-8 유리 농도
+
+check(RGBA.glassAlphaRange == 0.10...0.75, "FR-8 유리 농도 범위")
+check(RGBA(r: 0, g: 1, b: 1, a: 1).glassTint == RGBA(r: 0, g: 1, b: 1, a: 0.75), "FR-8 상한 초과는 0.75로 자름")
+check(RGBA(r: 0, g: 0, b: 0, a: 0).glassTint.a == 0.10, "FR-8 하한 미만은 0.10으로 자름")
+check(RGBA(r: 0.2, g: 0.3, b: 0.4, a: 0.4).glassTint == RGBA(r: 0.2, g: 0.3, b: 0.4, a: 0.4), "FR-8 범위 안은 그대로")
+check(RGBA(r: 0, g: 0, b: 0, a: 0.75).glassTint.a == 0.75 && RGBA(r: 0, g: 0, b: 0, a: 0.10).glassTint.a == 0.10, "FR-8 경계값 유지")
+
+// MARK: - FR-21 휘도 판정
+
+check(RGBA(r: 1, g: 1, b: 1, a: 1).isLight, "FR-21 흰색은 밝음")
+check(!RGBA(r: 0, g: 0, b: 0, a: 1).isLight, "FR-21 검정은 어두움")
+check(RGBA(r: 1, g: 0.85, b: 0.3, a: 0.5).isLight, "FR-21 노랑은 밝음")
+check(!RGBA(r: 0.1, g: 0.2, b: 0.6, a: 0.5).isLight, "FR-21 남색은 어두움")
+check(abs(RGBA(r: 0.5, g: 0.5, b: 0.5, a: 1).relativeLuminance - 0.2140) < 0.001, "FR-21 sRGB 감마 해제 후 휘도")
+
+// MARK: - FR-2d 시각 순환
+
+check(TimeStep.cycle(23, by: 1, modulo: 24) == 0, "FR-2d 23시 +1 → 0시")
+check(TimeStep.cycle(0, by: -1, modulo: 24) == 23, "FR-2d 0시 -1 → 23시")
+check(TimeStep.cycle(59, by: 1, modulo: 60) == 0, "FR-2d 59분 +1 → 0분")
+check(TimeStep.cycle(30, by: 1, modulo: 60) == 31, "FR-2d 일반 증가")
+check(TimeStep.cycle(5, by: -125, modulo: 60) == 0, "FR-2d 큰 음수도 범위 안")
+
+// MARK: - FR-37 남은 시간
+
+check(RemainingTime.text(seconds: 0) == "1분 뒤", "FR-37a 최소 1분")
+check(RemainingTime.text(seconds: 1) == "1분 뒤", "FR-37a 1초는 올림해 1분")
+check(RemainingTime.text(seconds: 60) == "1분 뒤", "FR-37a 정확히 60초")
+check(RemainingTime.text(seconds: 61) == "2분 뒤", "FR-37a 61초는 2분")
+check(RemainingTime.text(seconds: 59 * 60) == "59분 뒤", "FR-37b 분만")
+check(RemainingTime.text(seconds: 3600) == "1시간 뒤", "FR-37b 분 0 생략")
+check(RemainingTime.text(seconds: 9 * 3600 + 12 * 60) == "9시간 12분 뒤", "FR-37b 시간과 분")
+check(RemainingTime.text(seconds: 86400) == "1일 뒤", "FR-37b 시간 0 생략")
+check(RemainingTime.text(seconds: 2 * 86400 + 3 * 3600 + 59 * 60) == "2일 3시간 뒤", "FR-37b 일 단위에서는 분 생략")
+check(RemainingTime.text(seconds: -30) == "1분 뒤", "FR-37a 음수 입력도 최소 1분")
+
 // MARK: - 결과
 
 print("passed: \(passes), failed: \(failures)")

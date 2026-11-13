@@ -6,6 +6,9 @@ import ServiceManagement
 final class AlarmController: ObservableObject {
     @Published private(set) var alarms: [Alarm]
     @Published private(set) var nextFireText = ""
+    @Published private(set) var nextAlarm: Alarm?
+    @Published private(set) var nextFireDate: Date?
+    @Published private(set) var remainingText = ""
     @Published private(set) var loginStatus = SMAppService.mainApp.status
 
     private static let tickInterval: TimeInterval = 1
@@ -122,14 +125,25 @@ final class AlarmController: ObservableObject {
     }
 
     private func refreshNextFireText(now: Date) {
+        let next = AlarmSchedule.nextFire(in: alarms, after: now, calendar: .current)
         let text: String
-        if let next = AlarmSchedule.nextFire(in: alarms, after: now, calendar: .current) {
+        if let next {
             text = "다음 알람: " + next.date.formatted(.dateTime.weekday(.abbreviated).hour().minute())
         } else {
             text = "예정된 알람 없음"
         }
         if text != nextFireText {
             nextFireText = text
+        }
+        if next?.alarm != nextAlarm {
+            nextAlarm = next?.alarm
+        }
+        if next?.date != nextFireDate {
+            nextFireDate = next?.date
+        }
+        let remaining = next.map { RemainingTime.text(seconds: $0.date.timeIntervalSince(now)) } ?? ""
+        if remaining != remainingText {
+            remainingText = remaining
         }
     }
 }
